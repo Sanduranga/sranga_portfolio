@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Google Fonts ──────────────────────────────────────────────────────────── */
+/* @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,800&family=IM+Fell+English:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Special+Elite&family=Josefin+Sans:wght@300;400;600;700&display=swap'); */
+
+/* ── CSS Custom Properties ──────────────────────────────────────────────────── */
+:root {
+  --ink:        #1a1208;
+  --ink-light:  #2c1f0e;
+  --paper:      #f2ead8;
+  --paper-dark: #e4d9be;
+  --paper-aged: #cfc3a0;
+  --rule:       #1a1208;
+  --fade:       #5c4a2a;
+  --accent:     #8b1a1a;
+  --column-gap: 1.5rem;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* No page-level scroll — section-level only */
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IM Fell English', Georgia, serif;
+
+  /* Aged newsprint texture via layered CSS gradients */
+  background-image:
+    /* Slight yellowing vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(180,150,80,0.08) 100%),
+    /* Fine horizontal scan lines — mimics newsprint grain */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 23px,
+      rgba(26, 18, 8, 0.018) 23px,
+      rgba(26, 18, 8, 0.018) 24px
+    ),
+    /* Subtle vertical column pressure marks */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 199px,
+      rgba(26, 18, 8, 0.012) 199px,
+      rgba(26, 18, 8, 0.012) 200px
+    );
+}
+
+/* ── Selection ──────────────────────────────────────────────────────────────── */
+::selection { background: var(--ink); color: var(--paper); }
+
+/* ── Scrollbar — thin, period-appropriate ───────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(26,18,8,0.25); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REACT 19.2 VIEW TRANSITIONS — Newspaper page-turn effect
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   The ::view-transition-* pseudo-elements control the native browser animation.
+   We use different keyframes depending on direction class set on <html>.
+   
+   How it works:
+   1. user clicks nav / page turner
+   2. document.startViewTransition() captures old page screenshot  
+   3. React 19 useTransition updates state (new page renders)
+   4. Browser crossfades old→new using these CSS keyframes
+   5. The [data-direction] attribute controls which animation plays
+*/
+
+/* Enable view transitions */
+@view-transition { navigation: auto; }
+
+/* ── Default (forward): page slides left like turning a page ──────────────── */
+::view-transition-old(root) {
+  animation: vt-page-turn-out 0.45s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  transform-origin: left center;
+}
+
+::view-transition-new(root) {
+  animation: vt-page-turn-in 0.45s cubic-bezier(0.0, 0, 0.2, 1) forwards;
+  transform-origin: left center;
+}
+
+/* ── Backward: right-to-left reveal ────────────────────────────────────────── */
+html[data-direction="backward"] ::view-transition-old(root) {
+  animation: vt-page-turn-out-back 0.45s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  transform-origin: right center;
+}
+
+html[data-direction="backward"] ::view-transition-new(root) {
+  animation: vt-page-turn-in-back 0.45s cubic-bezier(0.0, 0, 0.2, 1) forwards;
+  transform-origin: right center;
+}
+
+/* ── Keyframes: FORWARD (left-to-right page turn) ───────────────────────────── */
+@keyframes vt-page-turn-out {
+  0%   { transform: perspective(1200px) rotateY(0deg);   opacity: 1; clip-path: inset(0 0 0 0); }
+  40%  { transform: perspective(1200px) rotateY(-15deg); opacity: 0.6; }
+  100% { transform: perspective(1200px) rotateY(-90deg); opacity: 0; clip-path: inset(0 100% 0 0); }
+}
+
+@keyframes vt-page-turn-in {
+  0%   { transform: perspective(1200px) rotateY(90deg);  opacity: 0; clip-path: inset(0 0 0 100%); }
+  60%  { transform: perspective(1200px) rotateY(8deg);   opacity: 0.8; }
+  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+/* ── Keyframes: BACKWARD (right-to-left) ───────────────────────────────────── */
+@keyframes vt-page-turn-out-back {
+  0%   { transform: perspective(1200px) rotateY(0deg);  opacity: 1; }
+  100% { transform: perspective(1200px) rotateY(90deg); opacity: 0; }
+}
+
+@keyframes vt-page-turn-in-back {
+  0%   { transform: perspective(1200px) rotateY(-90deg); opacity: 0; }
+  100% { transform: perspective(1200px) rotateY(0deg);   opacity: 1; }
+}
+
+/* ── Named transition: masthead stays fixed during page turns ─────────────── */
+.masthead-vt { view-transition-name: masthead; }
+
+::view-transition-old(masthead),
+::view-transition-new(masthead) {
+  /* Masthead doesn't animate — it stays perfectly still */
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY — 20th Century American Newspaper
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Column-rule headlines */
+.headline-1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.headline-2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+  line-height: 1.1;
+}
+
+.headline-3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  line-height: 1.2;
+}
+
+.deck {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--ink-light);
+}
+
+.byline {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fade);
+}
+
+.section-label {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--fade);
+}
+
+.body-copy {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.caption {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--fade);
+  line-height: 1.4;
+}
+
+/* ── Drop Cap ──────────────────────────────────────────────────────────────── */
+.drop-cap::first-letter {
+  font-family: 'Playfair Display', serif;
+  font-size: 4.8rem;
+  font-weight: 900;
+  line-height: 0.72;
+  float: left;
+  margin-right: 0.08em;
+  margin-top: 0.06em;
+  margin-bottom: -0.05em;
+  color: var(--ink);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LAYOUT — Newspaper column grid
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.col-rule {
+  border-right: 1px solid rgba(26, 18, 8, 0.2);
+}
+
+/* ── Rules ─────────────────────────────────────────────────────────────────── */
+.rule-thick   { border-top: 5px solid var(--rule); }
+.rule-medium  { border-top: 2px solid var(--rule); }
+.rule-thin    { border-top: 1px solid rgba(26, 18, 8, 0.25); }
+.rule-double  { border-top: 3px double var(--rule); }
+.rule-accent  { border-top: 3px solid var(--accent); }
+
+/* ── Decorative ornament ──────────────────────────────────────────────────── */
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--fade);
+}
+.ornament::before, .ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* ── Ink box (boxed content area) ─────────────────────────────────────────── */
+.ink-box {
+  border: 1px solid rgba(26, 18, 8, 0.22);
+  padding: 0.75rem;
+}
+
+.ink-box-bold {
+  border: 2px solid var(--ink);
+  padding: 0.75rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FORMS — typewriter / ink-on-paper style
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.ink-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  outline: none;
+  padding: 0.4rem 0;
+  font-family: 'IM Fell English', serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  width: 100%;
+  transition: border-bottom-width 0.12s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ink-input:focus {
+  border-bottom-width: 2px;
+}
+
+.ink-input::placeholder {
+  color: var(--fade);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.ink-input option {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKILL BARS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.skill-track {
+  height: 2px;
+  background: rgba(26, 18, 8, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   AVAILABILITY
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.status-available   { color: #1f4d1a; }
+.status-busy        { color: #6b4000; }
+.status-unavailable { color: #6b1a1a; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PAGE FADE-IN (fallback when View Transitions not supported)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STAGGER DELAYS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+.delay-5 { animation-delay: 300ms; }
